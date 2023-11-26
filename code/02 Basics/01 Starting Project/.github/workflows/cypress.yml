@@ -1,0 +1,39 @@
+name: Cypress
+on: 
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubunut-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+      - name: Install Dependencies
+        run: npm ci
+      - name: Cache Dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: dependencies-${{hashFiles('**/package-lock.json')}}
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifact
+          path: 'build/static.js'
+  run-cypress:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v3
+      - name: Run Cypress Test
+        id: cypress-run
+        uses: cypress-io/github-actions@v6
+      - name: Upload Failed Artifacts
+        if: failure() && steps.cypress-run.outcome == 'failure'
+        uses: actions/upload-artifacts@v3
+        with:
+          path: cypress/screenshots
+          name: cypress-artifacts 
